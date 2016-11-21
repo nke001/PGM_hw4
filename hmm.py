@@ -7,13 +7,15 @@ from scipy.misc import logsumexp
 
 
 class HMM:
-    def __init__(self, states, outputs, prob_start=None, trans_prob=None, emit_prob=None ):
+    def __init__(self, states, outputs, prob_start=None, trans_prob=None, emit_mu=None, emit_var=None ):
         self.states = states
         self.symbols = symbols
         self.prob_start = normalize(prob_start, self.states)
         self.trans_prob = normalize(trans_prob, self.states, self.outputs)
-        self.emit_prob = normalize(emit_prob, self.states, self.outputs)
-        
+        #self.emit_prob = normalize(emit_prob, self.states, self.outputs)
+        self.emit_mu = emit_mu
+        self.emit_var = emit_var
+
     def get_states(self):
         return set(self.states)
 
@@ -39,9 +41,9 @@ class HMM:
     def emit_prob(self, state, output):
         
         if (state not in self.states) or (output not in self.outputs):
-            return 0
+            return 0        
+        return self.likelihood(state, output)
 
-        return self.emit_prob[state][output]
 
     def alpha(self, seuqence):
         if len(sequence) == 0:
@@ -92,8 +94,16 @@ class HMM:
         mu = self.emit_prob[state]
         var = self.emit_var[state]
         
-        likelihood = 
+        # compute multivariate Gaussian
+        likelihood = np.exp(-0.5 * np.transpose(output - mu) * np.linalg.inv(var) * (output - mu)) / (np.sqrt(np.abs(2 * np.pi * var) ))
+        return likelihood
 
+
+    def infer(self, sequence):
+        if len(sequence) < 1:
+            return None
+
+        
 
 
     def inference(self, sequence):
@@ -136,10 +146,13 @@ def init_trans(K):
 
 
 K = 4
+num_output = 2
 
 train_data = load_file('hwk3data/EMGaussian.train')
 test_data = load_file('hwk3data/EMGaussian.test')
 
+states = np.arange(K)
+outputs = np.arange(num_output)
 
 prob_start = init_startP(K)
 trans_prob = init_trans(K)
@@ -148,8 +161,7 @@ emit_mu = np.asarray([[-2.0344, 4.1726],[3.9779, 3.7735],[3.9007, -3.7972],[-3.0
 emit_var = np.asarray([[2.9044, 0.2066, 0.2066, 2.7562], [0.2104, 0.2904, 0.2904, 12.2392], [0.9213, 0.0574, 0.0574, 1.8660], [6.2414, 6.0502, 6.0502, 6.1825]])
 
 
-
-
+hmm = HMM(states, outputs, prob_start, trans_prob, emit_mu, emit_var)
 
 
 
