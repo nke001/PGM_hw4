@@ -9,9 +9,9 @@ from scipy.misc import logsumexp
 class HMM:
     def __init__(self, states, outputs, prob_start=None, trans_prob=None, emit_mu=None, emit_var=None ):
         self.states = states
-        self.symbols = symbols
-        self.prob_start = normalize(prob_start, self.states)
-        self.trans_prob = normalize(trans_prob, self.states, self.outputs)
+        self.outputs = outputs
+        self.prob_start = prob_start
+        self.trans_prob = trans_prob
         #self.emit_prob = normalize(emit_prob, self.states, self.outputs)
         self.emit_mu = emit_mu
         self.emit_var = emit_var
@@ -39,14 +39,14 @@ class HMM:
         return self.trans_prob[s_t][s_t1]
 
     def emit_prob(self, state, output):
-        
-        if (state not in self.states) or (output not in self.outputs):
+
+        if (state not in self.states):
             return 0        
         return self.likelihood(state, output)
 
 
-    def alpha(self, seuqence):
-        if len(sequence) == 0:
+    def alpha(self, sequence):
+        if len(sequence) < 1:
             # start_probability
             return []
         
@@ -54,17 +54,19 @@ class HMM:
 
         # initialize q_0
         for state in self.states:
-            alpha[0][state] = self.prob_start(state) * self.emit_prob(state, sequence[0]) 
-
+            alpha[0][state] = self.prob_start[state] * self.emit_prob(state, sequence[0]) 
+            import ipdb; ipdb.set_trace()
         # 
         for i in range(len(sequence)):
             alpha.append({})
             for  state_to in self.states:
                 prob = 0
+                import ipdb; ipdb.set_trace()
                 for state_from in self.states:
+                    import ipdb; ipdb.set_trace()
                     prob += alpha[i][state_from] * self.trans_prob(state_from, state_to)
                     
-                alpha[i + 1][state_to] = prob * self.emit_prob(state_to, sequence[index])
+                alpha[i + 1][state_to] = prob * self.emit_prob(state_to, sequence[i])
 
         return alpha
 
@@ -91,17 +93,32 @@ class HMM:
         return beta
     
     def likelihood(self, state, output):
-        mu = self.emit_prob[state]
-        var = self.emit_var[state]
-        
+        import ipdb; ipdb.set_trace() 
+        mu = self.emit_mu[state]
+        mu_x = mu[0]
+        mu_y = mu[1]
+        var = self.emit_var[state].reshape((len(output),len(output)))
         # compute multivariate Gaussian
-        likelihood = np.exp(-0.5 * np.transpose(output - mu) * np.linalg.inv(var) * (output - mu)) / (np.sqrt(np.abs(2 * np.pi * var) ))
+        x = output[0]
+        y = output[1]
+        var_x = var[0][0]
+        var_y = var[1][1]
+        pu = (var[0][1]/ np.sqrt(var_x) / np.sqrt(var_y))
+        z = ((x - mu_x) ** 2 / var_x) + (( y - mu_y ) ** 2 / var_y) - (2 * pu * ( x - mu_x) * (y - mu_y)/ (var_x * var_y))
+        likelihood = 1 / (1 * np.pi * pu * np.sqrt( 1 - pu ** 2)) * np.exp(-1./ 2 * (1 - pu ** 2) * z)
+        #likelihood = np.exp(-0.5 * np.transpose(output - mu) * np.linalg.inv(var) * (output - mu)) / (np.sqrt(np.abs(2 * np.pi * var) ))
         return likelihood
 
 
-    def infer(self, sequence):
+    def evaluate(self, sequence):
         if len(sequence) < 1:
-            return None
+            return []
+        import ipdb; ipdb.set_trace()
+        forward = self.alpha(sequence)
+        
+        import ipdb; ipdb.set_trace()
+
+        return forward
 
         
 
@@ -122,8 +139,9 @@ class HMM:
 
     
 def load_file(filename):
-    with open(filename, 'r') as input_file:
-        data = np.load(input_file)
+    '''with open(filename, 'r') as input_file:
+        data = np.load(input_file)'''
+    data = np.loadtxt(filename)
     return data
 
 
@@ -163,7 +181,7 @@ emit_var = np.asarray([[2.9044, 0.2066, 0.2066, 2.7562], [0.2104, 0.2904, 0.2904
 
 hmm = HMM(states, outputs, prob_start, trans_prob, emit_mu, emit_var)
 
-
+hmm.evaluate(train_data)
 
 
 
