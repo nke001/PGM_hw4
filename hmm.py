@@ -103,31 +103,87 @@ class HMM:
         #likelihood = np.exp(-0.5 * np.transpose(output - mu) * np.linalg.inv(var) * (output - mu)) / (np.sqrt(np.abs(2 * np.pi * var) ))
         return likelihood
 
+    
 
     def evaluate(self, sequence):
         if len(sequence) < 1:
             return []
         forward = self.alpha(sequence)
         
-        import ipdb; ipdb.set_trace()
-
-        return forward
-
-        
-
-
-    def inference(self, sequence):
-        
-        if len(sequence) < 1:
-            return 0
-
-        prob = 0
-        forward = self.alpha(sequence)
+        # summarize probaly at t = T
         for state in forward[-1]:
             prob += forward[-1][state]
-
-        return prob
         
+        import ipdb; ipdb.set_trace()
+        return prob
+
+
+    def decode(self, sequence): 
+        #  Viterbi decoding
+
+        if len(sequence) < 1:
+            return []
+
+        delta = {}
+
+        for state in self.states:
+            delta[state] = self.prob_start[state] * self.emit_prob(state, sequence[0])
+
+        pre = []
+
+        for i in range(len(sequence)):
+            delta_bar = {}
+            pre_state = {}
+            for state_to in self.states:
+                max_prob = 0
+                max_state = None
+                for state_from in self.states:
+                    prob = delta[state_from] * self.trans_prob[state_from, state_to]
+                    if prob > max_prob:
+                        max_prob = prob
+                        max_state = state_from
+
+                delta_bar[state_to] = max_prob * self.emit_prob(state_to, sequence[i])
+                pre_state[state_to] = max_state
+            delta = delta_bar
+            pre.append(pre_state)
+
+        max_state = None
+        max_prob = 0
+
+        for state in self.states:
+            if delta[state] > max_prob:
+                max_prob = delta[state]
+                max_state = state
+        
+        if max_state is None:
+            return []
+
+        for i in range(len(sequence)-1, 0, -1):
+            max_state = pre[i -1][max_state]
+            result.insert(0, max_state)
+
+        return result
+
+
+
+    '''def train(seld, sequence, delta=0.000001, smoothing=0):
+         # implement EM
+
+         old_likelihood = 0
+
+         for _, outputs in sequences:
+             old_likelihood += log(self.evaluate(sequence))
+
+             old_likelihood /= len(sequence)
+
+             while True:
+                 update_likelihood = 0
+                 for _, outputs in sequences:
+                     self.
+        ''''
+
+
 
 
     
