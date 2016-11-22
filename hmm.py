@@ -55,19 +55,14 @@ class HMM:
         # initialize q_0
         for state in self.states:
             alpha[0][state] = self.prob_start[state] * self.emit_prob(state, sequence[0]) 
-            import ipdb; ipdb.set_trace()
         # 
         for i in range(len(sequence)):
             alpha.append({})
             for  state_to in self.states:
                 prob = 0
-                import ipdb; ipdb.set_trace()
                 for state_from in self.states:
-                    import ipdb; ipdb.set_trace()
-                    prob += alpha[i][state_from] * self.trans_prob(state_from, state_to)
-                    
+                    prob += alpha[i][state_from] * self.trans_prob[state_from, state_to]
                 alpha[i + 1][state_to] = prob * self.emit_prob(state_to, sequence[i])
-
         return alpha
 
     def beta(self, sequence):
@@ -86,14 +81,13 @@ class HMM:
                 prob = 0
                 for state_to in self.states:
                     prob += beta[1][state_to]
-                    self.trans_prob(state_from, state_to) * self.emit_prob(state_to, sequence[i + 1])
+                    self.trans_prob[state_from, state_to] * self.emit_prob(state_to, sequence[i + 1])
 
                 beta[0][state_from] = prob
 
         return beta
     
     def likelihood(self, state, output):
-        import ipdb; ipdb.set_trace() 
         mu = self.emit_mu[state]
         mu_x = mu[0]
         mu_y = mu[1]
@@ -113,7 +107,6 @@ class HMM:
     def evaluate(self, sequence):
         if len(sequence) < 1:
             return []
-        import ipdb; ipdb.set_trace()
         forward = self.alpha(sequence)
         
         import ipdb; ipdb.set_trace()
